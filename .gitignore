@@ -38,11 +38,8 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Playwright MCP
-.playwright-mcp/
-
-# SSL certificates
-*.pem
-
+# env files
 .env
 .env.*
+!.env.example
+!*.env.example
