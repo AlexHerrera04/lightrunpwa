@@ -3,33 +3,33 @@ import withNavbar from '../../core/handlers/withNavbar';
 
 import UserTable from '../components/User';
 import Goals from '../components/Goals';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   useOrganizations,
   useDeleteOrganization,
 } from '../services/organizationService';
 import Organization from '../components/Organization';
-import { OrganizationType, User } from '../types/organization';
+import { OrganizationType } from '../types/organization';
 
 import organizationIcon from '../../../assets/icons/organization-admin.svg';
 import userIcon from '../../../assets/icons/user-admin.svg';
 import metricIcon from '../../../assets/icons/metric.svg';
 import goalsIcon from '../../../assets/icons/goals-admin.svg';
+import botIcon from '../../../assets/icons/bot-icon.svg';
 
 import { useUser } from '../../core/feature-user/provider/userProvider';
 import { useGroupUsers } from '../services/userService';
 import { Spinner } from '@material-tailwind/react';
 import { toast } from 'react-toastify';
 import { PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+
 import ReportTable from '../components/Reports';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(() => {
     const lastTab = localStorage.getItem('lastTab');
-    localStorage.removeItem('lastTab'); // Limpiar después de usar
+    localStorage.removeItem('lastTab');
     return lastTab || 'Usuarios';
   });
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,15 +37,10 @@ const Admin: React.FC = () => {
   const { userInfo } = useUser();
   const { organizations, isLoading: orgsLoading } = useOrganizations();
 
-  // Usar el group_id real del usuario
   const userGroupId = userInfo?.group_id || '';
-  const userRole = 'ADMIN'; // Esto debería venir de algún lugar
+  const userRole = 'ADMIN';
 
-  const {
-    data: users = [],
-    isLoading: usersLoading,
-    refetch: refetchUsers,
-  } = useGroupUsers();
+  const { data: users = [], refetch: refetchUsers } = useGroupUsers();
 
   const deleteOrganizationMutation = useDeleteOrganization();
 
@@ -70,6 +65,11 @@ const Admin: React.FC = () => {
       value: 'Informes',
       icon: metricIcon,
     },
+    {
+      label: 'Coach Adm',
+      value: 'Coach Adm',
+      icon: botIcon,
+    },
   ];
 
   const handleDelete = async (id: string) => {
@@ -77,7 +77,6 @@ const Admin: React.FC = () => {
       await deleteOrganizationMutation.mutateAsync(id);
       refetchUsers();
     } catch (error) {
-      setError('Error deleting organization');
       console.error('Error:', error);
     }
   };
@@ -105,9 +104,30 @@ const Admin: React.FC = () => {
       case 'Usuarios':
         return <UserTable searchTerm={searchTerm.toLowerCase()} />;
       case 'Informes':
-        return <ReportTable searchTerm={searchTerm}/>;
+        return <ReportTable searchTerm={searchTerm} />;
       case 'Metas':
         return <Goals searchTerm={searchTerm} />;
+      case 'Super Coach':
+        return (
+          <div className="rounded-2xl border border-white/10 bg-[#1e2633] p-8 text-white">
+            <div className="flex items-center gap-4">
+              <img src={botIcon} alt="Super Coach" className="h-12 w-12" />
+              <div>
+                <h2 className="text-2xl font-semibold">Super Coach</h2>
+                <p className="mt-1 text-sm text-gray-300">
+                  Espacio reservado para la gestión avanzada del coach con IA.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-xl border border-dashed border-white/10 bg-[#0f172a] p-6">
+              <p className="text-sm text-gray-300">
+                Aquí puedes conectar la configuración, supervisión o herramientas
+                internas del coach cuando esa parte esté lista.
+              </p>
+            </div>
+          </div>
+        );
       default:
         return <UserTable searchTerm={searchTerm.toLowerCase()} />;
     }
@@ -116,9 +136,8 @@ const Admin: React.FC = () => {
   const content = (
     <div className="mx-auto w-full">
       <div className="flex flex-col">
-        <div className="flex items-center justify-center mt-6 sticky top-0 bg-[#0f172a] p-4">
-          {/* Tabs personalizados primero */}
-          <div className="flex gap-8">
+        <div className="sticky top-0 mt-6 flex items-center justify-center bg-[#0f172a] p-4">
+          <div className="flex items-start justify-center gap-6">
             {data.map(({ label, value, icon }) => (
               <button
                 key={value}
@@ -126,27 +145,32 @@ const Admin: React.FC = () => {
                   setActiveTab(value);
                   setSearchTerm('');
                 }}
-                className={`flex flex-col items-center p-2 rounded-lg transition-colors ${
+                className={`flex w-[110px] flex-col items-center rounded-lg p-2 text-center transition-colors ${
                   activeTab === value
                     ? 'text-white'
                     : 'text-gray-500 hover:text-white'
                 }`}
               >
-                <div className="w-10 h-10 flex items-center justify-center">
-                  <img src={icon} className="w-10 h-10" alt={label} />
+                <div className="flex h-10 w-10 items-center justify-center">
+                  <img
+                    src={icon}
+                    className="h-9 w-9 object-contain"
+                    alt={label}
+                  />
                 </div>
-                <span className="text-base">{label}</span>
+                <span className="mt-2 min-h-[48px] text-base leading-5">
+                  {label}
+                </span>
               </button>
             ))}
           </div>
 
-          {/* Buscador y botón de agregar */}
-          <div className="flex items-center ml-14 gap-11">
+          <div className="ml-14 flex items-center gap-11">
             <div className="relative w-96">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
               <input
                 type="text"
-                className="w-full pl-10 px-4 py-2 bg-[#1e2633] text-white rounded-lg border border-gray-600 focus:border-primary-900 focus:ring-2 focus:ring-primary-900 focus:outline-none"
+                className="w-full rounded-lg border border-gray-600 bg-[#1e2633] px-4 py-2 pl-10 text-white focus:border-primary-900 focus:outline-none focus:ring-2 focus:ring-primary-900"
                 placeholder={`Buscar ${
                   activeTab === 'Organización'
                     ? 'Organizaciones'
@@ -154,7 +178,9 @@ const Admin: React.FC = () => {
                     ? 'Metas'
                     : activeTab === 'Usuarios'
                     ? 'Usuarios'
-                    : 'Informes'
+                    : activeTab === 'Informes'
+                    ? 'Informes'
+                    : 'Super Coach'
                 }...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -171,9 +197,11 @@ const Admin: React.FC = () => {
                   navigate('/admin/goals');
                 } else if (activeTab === 'Informes') {
                   toast('Funcionalidad en desarrollo');
+                } else if (activeTab === 'Super Coach') {
+                  toast('Super Coach en desarrollo');
                 }
               }}
-              className="flex items-center justify-center gap-2 px-6 py-2 bg-primary-900 text-white rounded-lg hover:bg-primary-800 transition-colors w-72"
+              className="flex w-72 items-center justify-center gap-2 rounded-lg bg-primary-900 px-6 py-2 text-white transition-colors hover:bg-primary-800"
             >
               <PlusIcon className="h-5 w-5" />
               <span>
@@ -188,11 +216,11 @@ const Admin: React.FC = () => {
           </div>
         </div>
 
-        {/* Contenido */}
         <div className="mt-4 px-4">{renderList(activeTab)}</div>
       </div>
+
       {orgsLoading && (
-        <div className="text-center p-4">
+        <div className="p-4 text-center">
           <Spinner />
         </div>
       )}

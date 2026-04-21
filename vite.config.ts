@@ -9,13 +9,6 @@ export default defineConfig({
   server: {
     port: 4200,
     host: 'localhost',
-    proxy: {
-      '/mobile': {
-        target: 'http://localhost:5174',
-        // changeOrigin: true,
-        // ws: true,
-      },
-    },
   },
 
   preview: {

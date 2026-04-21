@@ -6,12 +6,6 @@ import { ThemeProvider } from '@material-tailwind/react';
 
 import App from './app/app';
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js');
-  });
-}
-
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
