@@ -4,6 +4,7 @@ import Routes from './routes/Routes';
 import AuthProvider from './auth/provider/authProvider';
 import UserProvider from './core/feature-user/provider/userProvider';
 import { ToastContainer } from 'react-toastify';
+import InstallMobileApp from './ui/InstallMobileApp';
 
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -25,6 +26,7 @@ export function App() {
             <Routes key="routes" />
             <ToastContainer key="toast" autoClose={5000} theme="dark" />
           </AnimatePresence>
+          <InstallMobileApp />
         </UserProvider>
       </AuthProvider>
     </QueryClientProvider>

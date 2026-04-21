@@ -6,7 +6,10 @@
   "scripts": {
     "start": "nx serve",
     "build": "nx build --skip-type-check",
-    "test": "nx test"
+    "test": "nx test",
+    "dev:web": "nx serve",
+    "dev:mobile": "cd mobile && npm run dev",
+    "build:mobile": "cd mobile && npm run build"
   },
   "private": true,
   "dependencies": {
@@ -21,9 +24,6 @@
     "axios": "^1.4.0",
     "chart.js": "^4.4.1",
     "classnames": "^2.3.2",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
     "formik": "^2.4.2",
     "formik-stepper": "^2.2.1",
     "framer-motion": "^10.12.16",

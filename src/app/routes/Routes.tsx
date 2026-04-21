@@ -17,6 +17,7 @@ import ChangePassword from '../feature-profile/handlers/ChangePassword';
 import Profile from '../feature-profile/handlers/Profile';
 import Content from '../feature-content/handlers/Content';
 import NewContent from '../feature-content/handlers/NewContent';
+import path from 'path';
 import Quiz from '../feature-quiz/handlers/Quiz';
 import Log from '../feature-log/handlers/Log';
 import Admin from '../feature-admin/handlers/Admin';
@@ -33,11 +34,10 @@ import EvaluatorLogin from '../feature-contributions/components/EvaluatorLogin';
 import EvaluationView from '../feature-contributions/components/EvaluationView';
 import EvaluatorsFeedbackList from '../feature-contributions/components/EvaluatorsFeedbackList';
 import EvaluatorFeedbackDetail from '../feature-contributions/components/EvaluatorFeedbackDetail';
-import Notifications from '../feature-notifications/handlers/Notifications';
-import Coach from '../feature-coach/handlers/Coach';
 import withNavbar from '../core/handlers/withNavbar';
 
 const Routes = () => {
+  // Define routes accessible only to auth users
   const routesForAuthUsers = [
     {
       path: '/',
@@ -72,28 +72,12 @@ const Routes = () => {
           ],
         },
         {
-          path: '/notificaciones',
-          element: <Outlet />,
-          children: [
-            {
-              path: '',
-              element: <Notifications />,
-            },
-          ],
-        },
-        {
-          path: '/coach',
-          element: <Outlet />,
-          children: [
-            {
-              path: '',
-              element: <Coach />,
-            },
-          ],
-        },
-        {
           path: '/explorer',
-          element: <Outlet />,
+          element: (
+            <>
+              <Outlet />
+            </>
+          ),
           children: [
             {
               path: '',
@@ -107,7 +91,11 @@ const Routes = () => {
         },
         {
           path: '/diagnosticador',
-          element: <Outlet />,
+          element: (
+            <>
+              <Outlet />
+            </>
+          ),
           children: [
             {
               path: '',
@@ -125,7 +113,11 @@ const Routes = () => {
         },
         {
           path: '/profile',
-          element: <Outlet />,
+          element: (
+            <>
+              <Outlet />
+            </>
+          ),
           children: [
             {
               path: '',
@@ -139,7 +131,11 @@ const Routes = () => {
         },
         {
           path: 'content',
-          element: <Outlet />,
+          element: (
+            <>
+              <Outlet />
+            </>
+          ),
           children: [
             {
               path: '',
@@ -157,7 +153,11 @@ const Routes = () => {
         },
         {
           path: '/quiz',
-          element: <Outlet />,
+          element: (
+            <>
+              <Outlet />
+            </>
+          ),
           children: [
             {
               path: ':id',
@@ -167,7 +167,11 @@ const Routes = () => {
         },
         {
           path: 'history',
-          element: <Outlet />,
+          element: (
+            <>
+              <Outlet />
+            </>
+          ),
           children: [
             {
               path: '',
@@ -235,7 +239,7 @@ const Routes = () => {
             },
             {
               path: 'feedback/:contributionId',
-              element: withNavbar({ children: <EvaluatorsFeedbackList evaluations={[]} showAll={false} /> }),
+              element: withNavbar({ children: <EvaluatorsFeedbackList /> }),
             },
             {
               path: 'feedback/:contributionId/evaluator/:evaluatorId',
@@ -245,16 +249,17 @@ const Routes = () => {
         },
         {
           path: '/admin/goals/assign',
-          element: <AssignGoal />,
+          element: <AssignGoal />
         },
         {
           path: '*',
-          element: <Navigate replace to="/home" />,
+          element: <Navigate to="home" />,
         },
       ],
     },
   ];
 
+  // Routes accessbile only to non-authenticated users
   const routesForNonAuthUsers = [
     {
       path: '/login',
@@ -263,10 +268,6 @@ const Routes = () => {
     {
       path: '/evaluator/evaluation/:id',
       element: <EvaluationView />,
-    },
-    {
-      path: '/evaluator/login',
-      element: <EvaluatorLogin />,
     },
   ];
 
