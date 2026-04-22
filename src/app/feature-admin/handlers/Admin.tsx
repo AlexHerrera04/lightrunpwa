@@ -69,6 +69,7 @@ const Admin: React.FC = () => {
       label: 'Coach Adm',
       value: 'Coach Adm',
       icon: botIcon,
+      isCoach: true,
     },
   ];
 
@@ -107,24 +108,28 @@ const Admin: React.FC = () => {
         return <ReportTable searchTerm={searchTerm} />;
       case 'Metas':
         return <Goals searchTerm={searchTerm} />;
-      case 'Super Coach':
+      case 'Coach Adm':
         return (
           <div className="rounded-2xl border border-white/10 bg-[#1e2633] p-8 text-white">
             <div className="flex items-center gap-4">
-              <img src={botIcon} alt="Super Coach" className="h-12 w-12" />
+              <img src={botIcon} alt="Coach Adm" className="h-12 w-12" />
               <div>
-                <h2 className="text-2xl font-semibold">Super Coach</h2>
+                <h2 className="text-2xl font-semibold">Coach Adm</h2>
                 <p className="mt-1 text-sm text-gray-300">
-                  Espacio reservado para la gestión avanzada del coach con IA.
+                  Abre el coach con alcance organizacional para analizar a una
+                  persona concreta.
                 </p>
               </div>
             </div>
 
             <div className="mt-6 rounded-xl border border-dashed border-white/10 bg-[#0f172a] p-6">
-              <p className="text-sm text-gray-300">
-                Aquí puedes conectar la configuración, supervisión o herramientas
-                internas del coach cuando esa parte esté lista.
-              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/coach?admin=1')}
+                className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-500"
+              >
+                Ir a Coach Adm
+              </button>
             </div>
           </div>
         );
@@ -138,19 +143,30 @@ const Admin: React.FC = () => {
       <div className="flex flex-col">
         <div className="sticky top-0 mt-6 flex items-center justify-center bg-[#0f172a] p-4">
           <div className="flex items-start justify-center gap-6">
-            {data.map(({ label, value, icon }) => (
+            {data.map(({ label, value, icon, isCoach }) => (
               <button
                 key={value}
                 onClick={() => {
+                  if (value === 'Coach Adm') {
+                    navigate('/coach?admin=1');
+                    return;
+                  }
+
                   setActiveTab(value);
                   setSearchTerm('');
                 }}
-                className={`flex w-[110px] flex-col items-center rounded-lg p-2 text-center transition-colors ${
+                className={`relative flex w-[110px] flex-col items-center rounded-lg p-2 text-center transition-colors ${
                   activeTab === value
                     ? 'text-white'
                     : 'text-gray-500 hover:text-white'
                 }`}
               >
+                {isCoach ? (
+                  <span className="absolute right-3 top-2 rounded-full bg-primary-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                    IA
+                  </span>
+                ) : null}
+
                 <div className="flex h-10 w-10 items-center justify-center">
                   <img
                     src={icon}
@@ -175,12 +191,12 @@ const Admin: React.FC = () => {
                   activeTab === 'Organización'
                     ? 'Organizaciones'
                     : activeTab === 'Metas'
-                    ? 'Metas'
-                    : activeTab === 'Usuarios'
-                    ? 'Usuarios'
-                    : activeTab === 'Informes'
-                    ? 'Informes'
-                    : 'Super Coach'
+                      ? 'Metas'
+                      : activeTab === 'Usuarios'
+                        ? 'Usuarios'
+                        : activeTab === 'Informes'
+                          ? 'Informes'
+                          : 'Coach Adm'
                 }...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -197,20 +213,23 @@ const Admin: React.FC = () => {
                   navigate('/admin/goals');
                 } else if (activeTab === 'Informes') {
                   toast('Funcionalidad en desarrollo');
-                } else if (activeTab === 'Super Coach') {
-                  toast('Super Coach en desarrollo');
+                } else if (activeTab === 'Coach Adm') {
+                  navigate('/coach?admin=1');
                 }
               }}
               className="flex w-72 items-center justify-center gap-2 rounded-lg bg-primary-900 px-6 py-2 text-white transition-colors hover:bg-primary-800"
             >
               <PlusIcon className="h-5 w-5" />
               <span>
-                Agregar{' '}
-                {activeTab === 'Organización'
-                  ? 'Organización'
-                  : activeTab === 'Usuarios'
-                  ? 'Usuario'
-                  : activeTab}
+                {activeTab === 'Coach Adm'
+                  ? 'Abrir Coach Adm'
+                  : `Agregar ${
+                      activeTab === 'Organización'
+                        ? 'Organización'
+                        : activeTab === 'Usuarios'
+                          ? 'Usuario'
+                          : activeTab
+                    }`}
               </span>
             </button>
           </div>

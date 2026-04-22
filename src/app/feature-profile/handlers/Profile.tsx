@@ -2,6 +2,7 @@ import {
   FunctionComponent,
   PropsWithChildren,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -12,8 +13,23 @@ import withNavbar from 'src/app/core/handlers/withNavbar';
 type AccordionProps = PropsWithChildren<{
   title: string;
   defaultOpen?: boolean;
-  lightMode: boolean;
+  description?: string;
 }>;
+
+type PersonalityId = 'motivador' | 'pragmatico' | 'brutal';
+
+const LEGACY_PERSONALITY_KEY = 'personalidadCoach';
+const COACH_PERSONALITY_KEY = 'desktopCoachPersonality';
+
+const COACH_PERSONALITIES: Array<{
+  id: PersonalityId;
+  label: string;
+  emoji: string;
+}> = [
+  { id: 'motivador', label: 'Motivador', emoji: '🌟' },
+  { id: 'pragmatico', label: 'Pragmático', emoji: '⚡' },
+  { id: 'brutal', label: 'Brutal', emoji: '👊' },
+];
 
 const getStoredNumber = (
   key: string,
@@ -24,52 +40,186 @@ const getStoredNumber = (
   return allowedValues.includes(storedValue) ? storedValue : fallback;
 };
 
-const joinValues = (values?: Array<string> | null): string => {
+const joinValues = (values?: string[] | null): string => {
   if (!values?.length) return '-';
   return values.filter(Boolean).join(', ');
+};
+
+const readCoachPersonality = (): PersonalityId => {
+  const modernValue = localStorage.getItem(COACH_PERSONALITY_KEY);
+  if (
+    modernValue === 'motivador' ||
+    modernValue === 'pragmatico' ||
+    modernValue === 'brutal'
+  ) {
+    return modernValue;
+  }
+
+  const legacyValue = localStorage.getItem(LEGACY_PERSONALITY_KEY);
+  if (legacyValue === 'Motivador') return 'motivador';
+  if (legacyValue === 'Pragmático') return 'pragmatico';
+  if (legacyValue === 'Brutal') return 'brutal';
+
+  return 'pragmatico';
+};
+
+const getCoachPersonalityLabel = (value: PersonalityId): string => {
+  return (
+    COACH_PERSONALITIES.find((item) => item.id === value)?.label || 'Pragmático'
+  );
 };
 
 const ProfileAccordion: FunctionComponent<AccordionProps> = ({
   title,
   children,
   defaultOpen = false,
-  lightMode,
+  description,
 }) => {
   const [open, setOpen] = useState<boolean>(defaultOpen);
 
   return (
-    <section
-      className={`overflow-hidden rounded-3xl border transition-colors ${
-        lightMode
-          ? 'border-slate-200 bg-white shadow-sm'
-          : 'border-slate-800 bg-slate-900/80 shadow-[0_20px_60px_rgba(0,0,0,0.25)]'
-      }`}
-    >
+    <section className="overflow-hidden rounded-2xl border border-white/10 bg-gray-800">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className={`flex w-full items-center justify-between px-5 py-4 text-left sm:px-6 ${
-          lightMode ? 'hover:bg-slate-50' : 'hover:bg-slate-800/70'
-        }`}
+        className="flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-white/5 sm:px-6"
       >
-        <span className="text-base font-semibold sm:text-lg">{title}</span>
-        <svg
-          className={`h-5 w-5 transition-transform ${open ? 'rotate-180' : ''}`}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <div>
+          <h2 className="text-base font-semibold text-white sm:text-lg">
+            {title}
+          </h2>
+          {description ? (
+            <p className="mt-1 text-sm text-gray-400">{description}</p>
+          ) : null}
+        </div>
+
+        <span
+          className={`rounded-full border border-white/10 bg-white/5 p-2 text-gray-300 transition-transform ${
+            open ? 'rotate-180' : ''
+          }`}
         >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+          <svg
+            className="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </span>
       </button>
 
       {open ? (
-        <div className="px-5 pb-5 sm:px-6 sm:pb-6">{children}</div>
+        <div className="border-t border-white/10 px-5 py-5 sm:px-6 sm:py-6">
+          {children}
+        </div>
       ) : null}
     </section>
+  );
+};
+
+const StatCard = ({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: string | number;
+  helper?: string;
+}) => (
+  <div className="rounded-2xl border border-white/10 bg-gray-900 px-3 py-3 sm:px-4">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+      {label}
+    </p>
+    <p className="mt-1 text-lg font-bold leading-none text-white sm:text-xl">
+      {value}
+    </p>
+    {helper ? <p className="mt-1 text-[11px] text-gray-500">{helper}</p> : null}
+  </div>
+);
+
+const InfoRow = ({
+  label,
+  value,
+  action,
+  danger = false,
+}: {
+  label: string;
+  value: string;
+  action?: () => void;
+  danger?: boolean;
+}) => {
+  const baseClass =
+    'flex w-full items-center justify-between gap-4 rounded-2xl border px-4 py-3 text-left transition sm:px-5';
+  const toneClass = danger
+    ? 'border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/15'
+    : 'border-white/10 bg-gray-900 text-white hover:bg-white/5';
+
+  const content = (
+    <>
+      <span
+        className={
+          danger
+            ? 'text-sm font-medium text-red-300'
+            : 'text-sm font-medium text-gray-400'
+        }
+      >
+        {label}
+      </span>
+      <span
+        className={
+          danger
+            ? 'text-right text-sm font-semibold text-red-300'
+            : 'text-right text-sm font-semibold text-white'
+        }
+      >
+        {value}
+      </span>
+    </>
+  );
+
+  if (action) {
+    return (
+      <button type="button" onClick={action} className={`${baseClass} ${toneClass}`}>
+        {content}
+      </button>
+    );
+  }
+
+  return <div className={`${baseClass} ${toneClass}`}>{content}</div>;
+};
+
+const OptionChip = ({
+  active,
+  disabled = false,
+  children,
+  onClick,
+  title,
+}: PropsWithChildren<{
+  active: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  title?: string;
+}>) => {
+  const className = disabled
+    ? 'cursor-not-allowed rounded-full border border-dashed border-white/10 bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-600'
+    : active
+      ? 'rounded-full border border-primary-500 bg-primary-600 px-3 py-2 text-sm font-semibold text-white'
+      : 'rounded-full border border-white/10 bg-gray-900 px-3 py-2 text-sm font-semibold text-gray-200 transition hover:border-primary-500 hover:text-white';
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      title={title}
+      className={className}
+    >
+      {children}
+    </button>
   );
 };
 
@@ -88,18 +238,15 @@ const Profile: FunctionComponent = () => {
   const [frecDesafio, setFrecDesafio] = useState<number>(() =>
     getStoredNumber('frecDesafio', [3, 5, 7], 5)
   );
-  const [personalidadCoach, setPersonalidadCoach] = useState<string>(
-    localStorage.getItem('personalidadCoach') || 'Pragmático'
-  );
+  const [personalidadCoach, setPersonalidadCoach] =
+    useState<PersonalityId>(readCoachPersonality);
 
-  const lightMode = !darkMode;
   const opcionesPreguntas = [5, 10, 15];
   const opcionesFrecuencia = [3, 5, 7];
-  const opcionesPersonalidad = ['Motivador', 'Pragmático', 'Brutal'];
 
   const targetSemanal = frecDesafio * numPreguntas;
 
-  const historialCount = (() => {
+  const historialCount = useMemo(() => {
     try {
       const savedHistory = JSON.parse(
         localStorage.getItem('historialContenidos') || '[]'
@@ -108,7 +255,7 @@ const Profile: FunctionComponent = () => {
     } catch {
       return 0;
     }
-  })();
+  }, []);
 
   const likedCount = userAccountInfo?.liked_contents?.length || 0;
 
@@ -125,7 +272,11 @@ const Profile: FunctionComponent = () => {
   }, [frecDesafio]);
 
   useEffect(() => {
-    localStorage.setItem('personalidadCoach', personalidadCoach);
+    localStorage.setItem(COACH_PERSONALITY_KEY, personalidadCoach);
+    localStorage.setItem(
+      LEGACY_PERSONALITY_KEY,
+      getCoachPersonalityLabel(personalidadCoach)
+    );
   }, [personalidadCoach]);
 
   const handleLogout = () => {
@@ -135,124 +286,115 @@ const Profile: FunctionComponent = () => {
     navigate('/login');
   };
 
-  const itemClass = `flex items-center justify-between gap-4 rounded-2xl border px-4 py-3 transition-colors sm:px-5 ${
-    lightMode
-      ? 'border-slate-200 bg-slate-50 text-slate-900'
-      : 'border-slate-800 bg-slate-950/70 text-white'
-  }`;
-
-  const labelClass = lightMode
-    ? 'text-sm font-medium text-slate-500'
-    : 'text-sm font-medium text-slate-400';
-
-  const valueClass = lightMode
-    ? 'text-right text-sm font-semibold text-slate-900'
-    : 'text-right text-sm font-semibold text-white';
-
-  const selectorButtonClass = (
-    active: boolean,
-    disabled = false,
-    tone: 'default' | 'danger' = 'default'
-  ): string => {
-    if (disabled) {
-      return lightMode
-        ? 'cursor-not-allowed rounded-full border border-dashed border-slate-300 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-400'
-        : 'cursor-not-allowed rounded-full border border-dashed border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-600';
-    }
-
-    if (tone === 'danger') {
-      return active
-        ? 'rounded-full border border-red-500 bg-red-500 px-3 py-2 text-sm font-semibold text-white'
-        : lightMode
-          ? 'rounded-full border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-600 hover:border-red-400 hover:bg-red-50'
-          : 'rounded-full border border-red-900/70 bg-slate-950 px-3 py-2 text-sm font-semibold text-red-400 hover:border-red-500 hover:bg-red-950/40';
-    }
-
-    return active
-      ? 'rounded-full border border-purple-500 bg-purple-500 px-3 py-2 text-sm font-semibold text-white'
-      : lightMode
-        ? 'rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-purple-400 hover:text-purple-700'
-        : 'rounded-full border border-slate-700 bg-slate-950 px-3 py-2 text-sm font-semibold text-slate-200 hover:border-purple-500 hover:text-purple-300';
-  };
+  const accountType =
+    userAccountInfo?.type === 'company'
+      ? 'Company'
+      : userAccountInfo?.type === 'expert'
+        ? 'Expert'
+        : '-';
 
   const pageContent = (
-    <div
-      className={`min-h-[calc(100vh-72px)] transition-colors ${
-        lightMode
-          ? 'bg-[linear-gradient(180deg,#f8fafc_0%,#e2e8f0_100%)] text-slate-900'
-          : 'bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.18),_transparent_32%),linear-gradient(180deg,#020617_0%,#0f172a_100%)] text-white'
-      }`}
-    >
-      <div className="container mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        <div className="mb-6 flex items-center gap-4 sm:mb-8">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            aria-label="Volver"
-            className={`flex h-11 w-11 items-center justify-center rounded-2xl border transition-colors ${
-              lightMode
-                ? 'border-slate-200 bg-white text-slate-900 hover:bg-slate-100'
-                : 'border-slate-800 bg-slate-900 text-white hover:bg-slate-800'
-            }`}
-          >
-            <svg
-              className="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+    <div className="min-h-[calc(100vh-72px)] bg-gray-900 text-white">
+      <div className="container mx-auto max-w-6xl px-4 py-8">
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              aria-label="Volver"
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-gray-800 text-white transition hover:bg-white/5"
             >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
 
-          <div>
-            <p
-              className={`text-xs uppercase tracking-[0.35em] ${
-                lightMode ? 'text-slate-500' : 'text-purple-300/80'
-              }`}
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-primary-300">
+                Área personal
+              </p>
+              <h1 className="mt-2 text-3xl font-bold text-white">Perfil</h1>
+              <p className="mt-2 text-sm text-gray-300">
+                Tu cuenta, tus preferencias y tu contexto personal en un solo sitio.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('./change-password')}
+              className="rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-500"
             >
-              Área personal
-            </p>
-            <h1 className="text-3xl font-black sm:text-4xl">Perfil</h1>
+              Cambiar contraseña
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/history')}
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              Ver historial
+            </button>
           </div>
         </div>
 
-        <div className="mb-6 rounded-[28px] border border-purple-500/20 bg-purple-500/10 p-5 backdrop-blur sm:mb-8 sm:p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              
-              <h2 className="text-2xl font-bold">
+        <div className="mb-6 rounded-3xl border border-white/10 bg-gray-800 p-6">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+            <div className="xl:max-w-xl">
+              <p className="text-xs uppercase tracking-[0.22em] text-gray-400">
+                Cuenta activa
+              </p>
+              <h2 className="mt-2 text-3xl font-bold text-white">
                 {userAccountInfo?.public_name ||
                   userInfo?.username ||
                   'Usuario sin nombre público'}
               </h2>
-              <p
-                className={`mt-1 text-sm ${
-                  lightMode ? 'text-slate-600' : 'text-slate-300'
-                }`}
-              >
+              <p className="mt-2 text-sm text-gray-300">
                 {userInfo?.email || 'Sin e-mail disponible'}
               </p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="rounded-full bg-primary-600/20 px-3 py-1 text-xs font-semibold text-primary-200">
+                  {accountType}
+                </span>
+                <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-gray-300">
+                  {userInfo?.organization || 'Sin empresa'}
+                </span>
+                <span className="rounded-full bg-white/5 px-3 py-1 text-xs font-semibold text-gray-300">
+                  Coach {getCoachPersonalityLabel(personalidadCoach)}
+                </span>
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => navigate('./change-password')}
-                className={selectorButtonClass(false)}
-              >
-                Cambiar contraseña
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/history')}
-                className={selectorButtonClass(false)}
-              >
-                Ver historial
-              </button>
+            <div className="grid w-full max-w-[460px] grid-cols-2 gap-3">
+              <StatCard
+                label="Mi score"
+                value={userAccountInfo?.total_score ?? 0}
+                helper="Puntos"
+              />
+              <StatCard
+                label="Favoritos"
+                value={likedCount}
+                helper="Guardados"
+              />
+              <StatCard
+                label="Historial"
+                value={historialCount}
+                helper="Vistos"
+              />
+              <StatCard
+                label="Target semanal"
+                value={targetSemanal}
+                helper="Objetivo"
+              />
             </div>
           </div>
         </div>
@@ -260,240 +402,191 @@ const Profile: FunctionComponent = () => {
         <div className="space-y-4">
           <ProfileAccordion
             title="Datos personales"
+            description="Información básica de tu cuenta."
             defaultOpen={true}
-            lightMode={lightMode}
           >
             <div className="space-y-3">
-              <div className={itemClass}>
-                <span className={labelClass}>Usuario</span>
-                <span className={valueClass}>{userInfo?.username || '-'}</span>
-              </div>
-              <div className={itemClass}>
-                <span className={labelClass}>Nombre público</span>
-                <span className={valueClass}>
-                  {userAccountInfo?.public_name || '-'}
-                </span>
-              </div>
-              <div className={itemClass}>
-                <span className={labelClass}>E-mail</span>
-                <span className={valueClass}>{userInfo?.email || '-'}</span>
-              </div>
-              <div className={itemClass}>
-                <span className={labelClass}>Nombre</span>
-                <span className={valueClass}>{userInfo?.first_name || '-'}</span>
-              </div>
-              <div className={itemClass}>
-                <span className={labelClass}>Apellido</span>
-                <span className={valueClass}>{userInfo?.last_name || '-'}</span>
-              </div>
-              <div className={itemClass}>
-                <span className={labelClass}>Mi score</span>
-                <span className={valueClass}>
-                  {userAccountInfo?.total_score ?? 0} puntos
-                </span>
-              </div>
+              <InfoRow label="Usuario" value={userInfo?.username || '-'} />
+              <InfoRow
+                label="Nombre público"
+                value={userAccountInfo?.public_name || '-'}
+              />
+              <InfoRow label="E-mail" value={userInfo?.email || '-'} />
+              <InfoRow label="Nombre" value={userInfo?.first_name || '-'} />
+              <InfoRow label="Apellido" value={userInfo?.last_name || '-'} />
+              <InfoRow
+                label="Mi score"
+                value={`${userAccountInfo?.total_score ?? 0} puntos`}
+              />
             </div>
           </ProfileAccordion>
 
-          <ProfileAccordion title="Perfil de empresa" lightMode={lightMode}>
+          <ProfileAccordion
+            title="Perfil de empresa"
+            description="Contexto profesional y datos de organización."
+          >
             <div className="space-y-3">
-              <div className={itemClass}>
-                <span className={labelClass}>Empresa</span>
-                <span className={valueClass}>
-                  {userInfo?.organization || '-'}
-                </span>
-              </div>
-              <div className={itemClass}>
-                <span className={labelClass}>Industria</span>
-                <span className={valueClass}>
-                  {joinValues(userAccountInfo?.industry)}
-                </span>
-              </div>
-              <div className={itemClass}>
-                <span className={labelClass}>Función</span>
-                <span className={valueClass}>
-                  {joinValues(userAccountInfo?.function)}
-                </span>
-              </div>
-              <div className={itemClass}>
-                <span className={labelClass}>Nivel</span>
-                <span className={valueClass}>
-                  {joinValues(userAccountInfo?.level)}
-                </span>
-              </div>
-              <div className={itemClass}>
-                <span className={labelClass}>Tipo de cuenta</span>
-                <span className={valueClass}>
-                  {userAccountInfo?.type === 'company' ? 'Company' : 'Expert'}
-                </span>
-              </div>
+              <InfoRow label="Empresa" value={userInfo?.organization || '-'} />
+              <InfoRow
+                label="Industria"
+                value={joinValues(userAccountInfo?.industry)}
+              />
+              <InfoRow
+                label="Función"
+                value={joinValues(userAccountInfo?.function)}
+              />
+              <InfoRow
+                label="Nivel"
+                value={joinValues(userAccountInfo?.level)}
+              />
+              <InfoRow label="Tipo de cuenta" value={accountType} />
             </div>
           </ProfileAccordion>
 
-          <ProfileAccordion title="Contenido" lightMode={lightMode}>
+          <ProfileAccordion
+            title="Contenido"
+            description="Acceso rápido a tu actividad y contribuciones."
+          >
             <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => navigate('/content')}
-                className={`${itemClass} w-full`}
-              >
-                <span className={labelClass}>Contenido compartido</span>
-                <span className={valueClass}>Ir al colaborador</span>
-              </button>
-              <div className={itemClass}>
-                <span className={labelClass}>Mis favoritos</span>
-                <span className={valueClass}>{likedCount} guardados</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate('/history')}
-                className={`${itemClass} w-full`}
-              >
-                <span className={labelClass}>Mi historial</span>
-                <span className={valueClass}>
-                  {historialCount > 0
+              <InfoRow
+                label="Contenido compartido"
+                value="Ir al colaborador"
+                action={() => navigate('/content')}
+              />
+              <InfoRow
+                label="Mis favoritos"
+                value={`${likedCount} guardados`}
+              />
+              <InfoRow
+                label="Mi historial"
+                value={
+                  historialCount > 0
                     ? `${historialCount} vistos`
-                    : 'Ver historial'}
-                </span>
-              </button>
-            </div>
-          </ProfileAccordion>
-
-          <ProfileAccordion title="Preferencias" lightMode={lightMode}>
-            <div className="space-y-5">
-              <button
-                type="button"
-                onClick={() => setDarkMode((current) => !current)}
-                className={`${itemClass} w-full`}
-              >
-                <span className={labelClass}>Modo claro</span>
-                <span className={valueClass}>{lightMode ? 'ON' : 'OFF'}</span>
-              </button>
-
-              <div className={itemClass}>
-                <span className={labelClass}>Frecuencia de desafío semanal</span>
-                <div className="flex flex-wrap justify-end gap-2">
-                  {opcionesFrecuencia.map((option) => {
-                    const blocked = option !== 5;
-
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        disabled={blocked}
-                        title={
-                          blocked ? 'Temporalmente no disponible' : undefined
-                        }
-                        onClick={() => setFrecDesafio(option)}
-                        className={selectorButtonClass(
-                          frecDesafio === option,
-                          blocked
-                        )}
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className={itemClass}>
-                <span className={labelClass}>Preguntas por desafío</span>
-                <div className="flex flex-wrap justify-end gap-2">
-                  {opcionesPreguntas.map((option) => {
-                    const blocked = ![5, 10].includes(option);
-
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        disabled={blocked}
-                        title={
-                          blocked ? 'Temporalmente no disponible' : undefined
-                        }
-                        onClick={() => setNumPreguntas(option)}
-                        className={selectorButtonClass(
-                          numPreguntas === option,
-                          blocked
-                        )}
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className={itemClass}>
-                <span className={labelClass}>Target semanal</span>
-                <span className={valueClass}>{targetSemanal} puntos</span>
-              </div>
-
-              <div className={itemClass}>
-                <span className={labelClass}>Personalidad de mi Coach AI</span>
-                <div className="flex flex-wrap justify-end gap-2">
-                  {opcionesPersonalidad.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => setPersonalidadCoach(option)}
-                      className={selectorButtonClass(
-                        personalidadCoach === option
-                      )}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => navigate('/coach')}
-                className={`${itemClass} w-full`}
-              >
-                <span className={labelClass}>
-                  Recomendaciones de mi Coach AI
-                </span>
-                <span className={valueClass}>Ver</span>
-              </button>
-            </div>
-          </ProfileAccordion>
-
-          <ProfileAccordion title="Centro de ayuda" lightMode={lightMode}>
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() =>
-                  window.open('https://openkx.ai/support', '_blank')
+                    : 'Ver historial'
                 }
-                className={`${itemClass} w-full`}
-              >
-                <span className={labelClass}>Soporte</span>
-                <span className={valueClass}>Abrir centro de ayuda</span>
-              </button>
+                action={() => navigate('/history')}
+              />
+            </div>
+          </ProfileAccordion>
 
-              <button
-                type="button"
-                onClick={() => navigate('./change-password')}
-                className={`${itemClass} w-full`}
-              >
-                <span className={labelClass}>Privacidad y seguridad</span>
-                <span className={valueClass}>Cambiar contraseña</span>
-              </button>
+          <ProfileAccordion
+            title="Preferencias"
+            description="Ajustes personales y configuración del coach."
+          >
+            <div className="space-y-5">
+              <InfoRow
+                label="Modo claro"
+                value={darkMode ? 'OFF' : 'ON'}
+                action={() => setDarkMode((current) => !current)}
+              />
 
-              <button
-                type="button"
-                onClick={handleLogout}
-                className={`${itemClass} w-full border-red-500/30 text-red-400`}
-              >
-                <span className="text-sm font-medium text-red-400">
-                  Cerrar sesión
-                </span>
-                <span className="text-right text-sm font-semibold text-red-400">
-                  Salir
-                </span>
-              </button>
+              <div className="rounded-2xl border border-white/10 bg-gray-900 px-4 py-4 sm:px-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <span className="text-sm font-medium text-gray-400">
+                    Frecuencia de desafío semanal
+                  </span>
+                  <div className="flex flex-wrap gap-2 lg:justify-end">
+                    {opcionesFrecuencia.map((option) => {
+                      const blocked = option !== 5;
+
+                      return (
+                        <OptionChip
+                          key={option}
+                          active={frecDesafio === option}
+                          disabled={blocked}
+                          title={
+                            blocked ? 'Temporalmente no disponible' : undefined
+                          }
+                          onClick={() => setFrecDesafio(option)}
+                        >
+                          {option}
+                        </OptionChip>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-gray-900 px-4 py-4 sm:px-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <span className="text-sm font-medium text-gray-400">
+                    Preguntas por desafío
+                  </span>
+                  <div className="flex flex-wrap gap-2 lg:justify-end">
+                    {opcionesPreguntas.map((option) => {
+                      const blocked = ![5, 10].includes(option);
+
+                      return (
+                        <OptionChip
+                          key={option}
+                          active={numPreguntas === option}
+                          disabled={blocked}
+                          title={
+                            blocked ? 'Temporalmente no disponible' : undefined
+                          }
+                          onClick={() => setNumPreguntas(option)}
+                        >
+                          {option}
+                        </OptionChip>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <InfoRow
+                label="Target semanal"
+                value={`${targetSemanal} puntos`}
+              />
+
+              <div className="rounded-2xl border border-white/10 bg-gray-900 px-4 py-4 sm:px-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <span className="text-sm font-medium text-gray-400">
+                    Personalidad de mi Coach AI
+                  </span>
+                  <div className="flex flex-wrap gap-2 lg:justify-end">
+                    {COACH_PERSONALITIES.map((option) => (
+                      <OptionChip
+                        key={option.id}
+                        active={personalidadCoach === option.id}
+                        onClick={() => setPersonalidadCoach(option.id)}
+                      >
+                        {option.emoji} {option.label}
+                      </OptionChip>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <InfoRow
+                label="Recomendaciones de mi Coach AI"
+                value="Ver"
+                action={() => navigate('/coach')}
+              />
+            </div>
+          </ProfileAccordion>
+
+          <ProfileAccordion
+            title="Centro de ayuda"
+            description="Soporte, seguridad y salida de sesión."
+          >
+            <div className="space-y-3">
+              <InfoRow
+                label="Soporte"
+                value="Abrir centro de ayuda"
+                action={() => window.open('https://openkx.ai/support', '_blank')}
+              />
+              <InfoRow
+                label="Privacidad y seguridad"
+                value="Cambiar contraseña"
+                action={() => navigate('./change-password')}
+              />
+              <InfoRow
+                label="Cerrar sesión"
+                value="Salir"
+                action={handleLogout}
+                danger={true}
+              />
             </div>
           </ProfileAccordion>
         </div>
